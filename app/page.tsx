@@ -9,9 +9,9 @@ export default function Home() {
   
   let correct=0;
   let totalword=0;
- 
-  const time:any= new Date();
-  time.setSeconds(time.getSeconds());
+  let accuracy=correct/totalword;
+  let numberofgames=0;
+  let flag=0
 
   const {
     totalSeconds,
@@ -25,11 +25,13 @@ export default function Home() {
     resume,
     restart,
   } = useTimer();
+  if(seconds==0 && minutes==0) flag=1;
   const router=useRouter();
   const session = useSession();
      if(!session){
-     router.push("/api/auth/signin");
+      router.push("/api/auth/signin");
      }
+     const [previousgame,setprevious]=useState();
     
   
   const [text, setText] = useState('');
@@ -47,6 +49,7 @@ export default function Home() {
     restart(time)
    })
   const renderText = () => {
+     if(seconds !=0 || minutes !=0 ){
     return [...lorem].map((char, index) => {
       let color;
       if (text[index]) {
@@ -56,7 +59,17 @@ export default function Home() {
       }
       return <span style={{ color }}>{char}</span>;
     });
+  }
   };
+    const restartfunc=()=>
+    {
+
+        accuracy=0;
+        correct=0;
+        totalword=0;
+        numberofgames=numberofgames+1;
+        return null;
+    }
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center relative">
@@ -73,13 +86,30 @@ export default function Home() {
         <span>{minutes}</span>:<span>{seconds}</span>
       </div>
       <div>
-      <button onClick={() => timer(15)}>15 sec</button>
-      <button onClick={() => timer(30)}>30 sec</button>
-      <button onClick={() => timer(60)}>60 sec</button>
-      <button onClick={() => timer(120)}>120 sec</button>
+  
+        {flag &&    (numberofgames==0 ? <div>
+          <div> start the game by clicking on timer</div>
+        </div>: <div>
+          <h1>
+            Score
+          </h1>
+          <h2>
+          <div>correct words-{correct}</div>
+          <div>totalwords-{totalword}</div>
+           <div> Accuracy- {accuracy.toFixed(2)}</div>
+          </h2>
+          <button onClick={restartfunc()}>Restart</button>
+         
+        </div>)
+       }
+     
+      <button onClick={() => timer(15)}>...15 sec....</button>
+      <button onClick={() => timer(30)}>..30 sec.....</button>
+      <button onClick={() => timer(60)}>.60 sec....</button>
+      <button onClick={() => timer(120)}>.120 sec...</button>
       <div>correct words-{correct}</div>
       <div>totalwords-{totalword}</div>
-      <div> Accuracy- {(correct/totalword).toFixed(2)}</div>
+      <div> Accuracy- {accuracy.toFixed(2)}</div>
       </div>
     </div>
   );
