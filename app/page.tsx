@@ -1,17 +1,16 @@
-'use client'
-import { useState } from 'react';
+"use client";
+import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useTimer } from 'react-timer-hook';
+import { useTimer } from "react-timer-hook";
 
 export default function Home() {
-  
-  let correct=0;
-  let totalword=0;
-  let accuracy=correct/totalword;
-  let numberofgames=0;
-  let flag=0
+  let Correct = 0;
+  let totalWords = 0;
+
+  const time: any = new Date();
+  time.setSeconds(time.getSeconds());
 
   const {
     totalSeconds,
@@ -25,92 +24,89 @@ export default function Home() {
     resume,
     restart,
   } = useTimer();
-  if(seconds==0 && minutes==0) flag=1;
-  const router=useRouter();
+  const router = useRouter();
   const session = useSession();
-     if(!session){
-      router.push("/api/auth/signin");
-     }
-     const [previousgame,setprevious]=useState();
-    
-  
-  const [text, setText] = useState('');
+  if (!session) {
+    router.push("/api/auth/signin");
+  }
+
+  const [text, setText] = useState("");
   const lorem = `Lorem ipsum dolor sit amet, consectetur adipiscing elit
   sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
   Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi`;
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
   };
 
-   const timer=((e:any)=>{
+  const timer = (e: any) => {
     const time = new Date();
     time.setSeconds(time.getSeconds() + e);
-    restart(time)
-   })
+    restart(time);
+  };
   const renderText = () => {
-     if(seconds !=0 || minutes !=0 ){
     return [...lorem].map((char, index) => {
       let color;
       if (text[index]) {
-        if(text[index]===char) correct=correct+1;
-        totalword=totalword+1;
-        color = text[index] === char ? 'green' : 'red';
+        if (text[index] === char) Correct = Correct + 1;
+        totalWords = totalWords + 1;
+        color = text[index] === char ? "white" : "red";
       }
       return <span style={{ color }}>{char}</span>;
     });
-  }
   };
-    const restartfunc=()=>
-    {
-
-        accuracy=0;
-        correct=0;
-        totalword=0;
-        numberofgames=numberofgames+1;
-        return null;
-    }
 
   return (
-    <div className="w-full min-h-screen flex justify-center items-center relative">
-      <div className="absolute h-96 w-[700px] p-4 text-xl text-black">
-        {renderText()}
+    <>
+      <div className="w-full flex flex-col justify-center items-center space-y-10">
+        <div className="text-[#e2b714] text-5xl">
+          <span>{minutes}</span>:<span>{seconds}</span>
+        </div>
+        <div>
+          <button
+            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
+            onClick={() => timer(15)}
+          >
+            15 sec
+          </button>
+          <button
+            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
+            onClick={() => timer(30)}
+          >
+            30 sec
+          </button>
+          <button
+            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
+            onClick={() => timer(60)}
+          >
+            60 sec
+          </button>
+          <button
+            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
+            onClick={() => timer(120)}
+          >
+            120 sec
+          </button>
+          <div className="flex space-x-4 text-xl font-bold text-[#5d5f62]">
+            <div>Correct Words- <span className="text-[#e2b714]">{Correct}</span></div>
+            <div>Total Words- <span className="text-[#e2b714]">{totalWords}</span></div>
+            <div>Accuracy <span className="text-[#e2b714]">{(Correct / totalWords).toFixed(2)}</span></div>
+          </div>
+        </div>
       </div>
-    
-      <textarea 
-        className="h-96 w-[700px] flex justify-center items-center bg-slate-600 p-4 text-xl text-black z-10 bg-transparent text-transparent"
-        value={text}
-        onChange={handleChange}
-      />
-        <div style={{fontSize: '50px'}}>
-        <span>{minutes}</span>:<span>{seconds}</span>
+      <div className="w-full min-h-screen flex justify-center items-center relative">
+        <div className="absolute h-48 w-[900px] p-4 text-3xl text-[#5d5f62] font-bold">
+          {renderText()}
+        </div>
+
+        <textarea
+          className="h-48 w-[900px] flex justify-center items-center p-4 z-10 text-3xl bg-transparent text-transparent border-none outline-none"
+          value={text}
+          onChange={handleChange}
+          style={{ caretColor: "#e2b714" }}
+          autoFocus
+        />
       </div>
-      <div>
-  
-        {flag &&    (numberofgames==0 ? <div>
-          <div> start the game by clicking on timer</div>
-        </div>: <div>
-          <h1>
-            Score
-          </h1>
-          <h2>
-          <div>correct words-{correct}</div>
-          <div>totalwords-{totalword}</div>
-           <div> Accuracy- {accuracy.toFixed(2)}</div>
-          </h2>
-          <button onClick={restartfunc()}>Restart</button>
-         
-        </div>)
-       }
-     
-      <button onClick={() => timer(15)}>...15 sec....</button>
-      <button onClick={() => timer(30)}>..30 sec.....</button>
-      <button onClick={() => timer(60)}>.60 sec....</button>
-      <button onClick={() => timer(120)}>.120 sec...</button>
-      <div>correct words-{correct}</div>
-      <div>totalwords-{totalword}</div>
-      <div> Accuracy- {accuracy.toFixed(2)}</div>
-      </div>
-    </div>
+    </>
   );
 }
