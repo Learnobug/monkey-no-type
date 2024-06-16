@@ -6,10 +6,10 @@ import { useSession } from "next-auth/react";
 export default function Home() {
   const router=useRouter();
   const session = useSession();
-  if(!(session))
-    {
-       return router.push("/api/auth/signin");
-    }
+     if(!session){
+     router.push("/api/auth/signin");
+     }
+    
   
   const [text, setText] = useState('');
   const lorem = `Lorem ipsum dolor sit amet, consectetur adipiscing elit
