@@ -1,8 +1,16 @@
 'use client'
 import { useState } from 'react';
 import Image from "next/image";
-
+import { useRouter } from 'next/navigation';
+import { useSession } from "next-auth/react";
 export default function Home() {
+  const router=useRouter();
+  const session = useSession();
+  if(!(session))
+    {
+       return router.push("/api/auth/signin");
+    }
+  
   const [text, setText] = useState('');
   const lorem = `Lorem ipsum dolor sit amet, consectetur adipiscing elit
   sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
@@ -27,6 +35,7 @@ export default function Home() {
       <div className="absolute h-96 w-[700px] p-4 text-xl text-black">
         {renderText()}
       </div>
+    
       <textarea 
         className="h-96 w-[700px] flex justify-center items-center bg-slate-600 p-4 text-xl text-black z-10 bg-transparent text-transparent"
         value={text}
