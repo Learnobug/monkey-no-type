@@ -36,6 +36,7 @@ export default function Home() {
   Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi`;
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (!isRunning) resume();
     setText(e.target.value);
   };
 
@@ -43,6 +44,7 @@ export default function Home() {
     const time = new Date();
     time.setSeconds(time.getSeconds() + e);
     restart(time);
+    pause();
   };
   const renderText = () => {
     return [...lorem].map((char, index) => {
@@ -58,7 +60,20 @@ export default function Home() {
 
   return (
     <>
-      <div className="w-full flex flex-col justify-center items-center space-y-10">
+      <div className="w-full h-96 flex justify-center items-center relative">
+        <div className="absolute h-48 w-[900px] p-4 text-3xl text-[#5d5f62] font-bold">
+          {renderText()}
+        </div>
+        <textarea
+          className="h-48 w-[900px] flex justify-center items-center p-4 z-10 text-3xl bg-transparent text-transparent border-none outline-none font-bold"
+          value={text}
+          onChange={handleChange}
+          style={{ caretColor: "#e2b714" }}
+          autoFocus
+          disabled={!isRunning && seconds === 0}
+        />
+      </div>
+      <div className="w-full flex flex-col justify-start items-center space-y-10">
         <div className="text-[#e2b714] text-5xl">
           <span>{minutes}</span>:<span>{seconds}</span>
         </div>
@@ -87,25 +102,24 @@ export default function Home() {
           >
             120 sec
           </button>
-          <div className="flex space-x-4 text-xl font-bold text-[#5d5f62]">
-            <div>Correct Words- <span className="text-[#e2b714]">{Correct}</span></div>
-            <div>Total Words- <span className="text-[#e2b714]">{totalWords}</span></div>
-            <div>Accuracy <span className="text-[#e2b714]">{(Correct / totalWords).toFixed(2)}</span></div>
-          </div>
+          {!isRunning && seconds === 0 && (
+            <div className="flex space-x-4 text-xl font-bold text-[#5d5f62]">
+              <div>
+                Correct Words- <span className="text-[#e2b714]">{Correct}</span>
+              </div>
+              <div>
+                Total Words-{" "}
+                <span className="text-[#e2b714]">{totalWords}</span>
+              </div>
+              <div>
+                Accuracy{" "}
+                <span className="text-[#e2b714]">
+                  {(Correct / totalWords).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-      <div className="w-full min-h-screen flex justify-center items-center relative">
-        <div className="absolute h-48 w-[900px] p-4 text-3xl text-[#5d5f62] font-bold">
-          {renderText()}
-        </div>
-
-        <textarea
-          className="h-48 w-[900px] flex justify-center items-center p-4 z-10 text-3xl bg-transparent text-transparent border-none outline-none"
-          value={text}
-          onChange={handleChange}
-          style={{ caretColor: "#e2b714" }}
-          autoFocus
-        />
       </div>
     </>
   );
