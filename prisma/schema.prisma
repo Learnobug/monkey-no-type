@@ -17,4 +17,17 @@ model User{
    id    Int     @id @default(autoincrement())
   email String  @unique
   password String
+  username String @default("Guest")
+  scores      Score[]
+}
+
+model Score{
+    id    Int     @id @default(autoincrement())
+  user   User    @relation(fields: [userId],references: [id])
+  userId  Int
+  Accuracy Int
+  WordsCount Int
+  CorrectWords Int
+  Totaltime Int
+  timestamp DateTime @default(now())
 }
