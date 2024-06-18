@@ -25,7 +25,7 @@ model Score{
     id    Int     @id @default(autoincrement())
   user   User    @relation(fields: [userId],references: [id])
   userId  Int
-  Accuracy Int
+  Accuracy Float
   WordsCount Int
   CorrectWords Int
   Totaltime Int

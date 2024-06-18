@@ -11,11 +11,14 @@ export async function PUT(req:any) {
          const reqbody=await req.json();
          const userId=parseInt(req.url.split('/')[5]);
          const {Accuracy,WordsCount,CorrectWords,Totaltime}=reqbody;
+        
          const userexist=await prisma.user.findFirst({
             where:{
                 id:userId
             }
          })
+
+         console.log(Accuracy,WordsCount,CorrectWords,Totaltime)
          if(!userexist)
             {
                 return NextResponse.json({ error:`User Not Exists`},{status:400})
@@ -25,7 +28,7 @@ export async function PUT(req:any) {
                 data: {
                   scores: {
                     create: {
-                      Accuracy,
+                      Accuracy:parseFloat(Accuracy),
                       WordsCount,
                       CorrectWords,
                       Totaltime
@@ -36,6 +39,7 @@ export async function PUT(req:any) {
                   scores: true
                 }
               });
+              
           
               return NextResponse.json({ message: 'Scores Added successfully', user: updatedUser },{status:201});
     }

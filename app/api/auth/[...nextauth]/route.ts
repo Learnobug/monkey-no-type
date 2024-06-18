@@ -1,20 +1,71 @@
-import NextAuth from 'next-auth'
-import AppleProvider from 'next-auth/providers/apple'
-import FacebookProvider from 'next-auth/providers/facebook'
-import GoogleProvider from 'next-auth/providers/google'
-import EmailProvider from 'next-auth/providers/email'
+import NextAuth from "next-auth"
+import { PrismaClient } from '@prisma/client';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import bcryptjs from 'bcryptjs' 
 
+const prisma=new PrismaClient();
 const handler = NextAuth({
   providers: [
-    // OAuth authentication providers...
-    GoogleProvider({
-      clientId: process.env.GOOGLE_ID || '',
-      clientSecret: process.env.GOOGLE_SECRET || ''
-    }),
-    // Passwordless / email sign in
-  ]
-  
+    CredentialsProvider({
+        name: 'Credentials',
+        credentials: {
+           email: { label: 'email', type: 'text', placeholder: '' },
+          password: { label: 'password', type: 'password', placeholder: '' },
+        },
+        async authorize(credentials: any) {
+          const salt= await bcryptjs.genSalt(10)
+          const hashedPassword = await bcryptjs.hash(credentials.password, salt);
+          const existingUser = await prisma.user.findFirst({
+              where: {
+                  email: credentials.email
+              }
+          });
+
+          if (existingUser) {
+              const passwordValidation = await bcryptjs.compare(credentials.password, existingUser.password);
+              if (passwordValidation) {
+                  return {
+                      id: existingUser.id,
+                      email: existingUser.email
+                  }
+              }
+              return null;
+          }
+
+          try {
+              const user = await prisma.user.create({
+                  data: {
+                      email: credentials.email,
+                      password: hashedPassword
+                  }
+              });
+          
+              return {
+                  id: user.id.toString(),
+                  email: user.email
+              }
+          } catch(e) {
+              console.error(e);
+          }
+
+        },
+      })
+  ],
+  secret: process.env.NEXTAUTH_SECRET,
+  callbacks: {
+      jwt: async ({ user, token }: any) => {
+      if (user) {
+          token.uid = user.id;
+      }
+      return token;
+      },
+    session: ({ session, token, user }: any) => {
+        if (session.user) {
+            session.user.id = token.uid
+        }
+        return session
+    }
+  },
 })
 
-export { handler as POST, handler as GET}
-
+export { handler as GET, handler as POST }

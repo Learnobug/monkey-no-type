@@ -86,6 +86,6 @@ function generateRandomParagraph(minWords:any, maxWords:any) {
   
 
   export async function GET(req:any) {
-    const randomParagraph = generateRandomParagraph(100, 150);
-    return NextResponse.json({"string":randomParagraph},{status:200})
+    const randomParagraph = generateRandomParagraph(60, 80);
+    return NextResponse.json({randomParagraph},{status:200})
   }

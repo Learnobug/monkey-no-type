@@ -1,17 +1,25 @@
 "use client";
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTimer } from "react-timer-hook";
+import axios from 'axios'
+import { Result } from "@/components/ResultComponent";
 
 export default function Home() {
   let Correct = 0;
   let totalWords = 0;
+  let countgames=0;
+  
 
   const time: any = new Date();
-  time.setSeconds(time.getSeconds());
-
+  const[lorem,setLorem]=useState('');
+  const [sentence,setSentence]=useState('');  
+  let resulttime=0;
+  const router = useRouter();
+  const session = useSession();
+  const [text, setText] = useState("");
   const {
     totalSeconds,
     seconds,
@@ -24,17 +32,61 @@ export default function Home() {
     resume,
     restart,
   } = useTimer();
-  const router = useRouter();
-  const session = useSession();
-  console.log(session);
+
   if (!session) {
     router.push("/api/auth/signin");
   }
+  time.setSeconds(time.getSeconds());
 
-  const [text, setText] = useState("");
-  const lorem = `Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-  Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi`;
+ const redirectfunc=()=>{
+  return router.push('/result')
+ }
+  
+   useEffect(()=>{
+          const headers = {
+            'Content-Type': 'application/json'
+        };
+         
+          const data = {
+            Accuracy: (Correct / totalWords).toFixed(2),
+            WordsCount: totalWords,
+            CorrectWords: Correct,
+            Totaltime: resulttime
+          };
+          
+        const storedata=async () =>{
+           
+          try{
+             const response= await axios.put(`/api/user/${Object.values(session.data.user)[1]}/scores`,data,{headers});
+             console.log(response.data);
+          }catch(error)
+          {
+            console.error('Error fetching data:', error); 
+          }
+        }
+          storedata();
+   },[isRunning])
+
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('/api/word');
+        setSentence(JSON.stringify(response.data.randomParagraph));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    
+    fetchData();
+  }, []);
+  
+   useEffect(()=>{
+      setSentence(lorem)
+   },[lorem])
+
+ 
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!isRunning) resume();
@@ -43,12 +95,13 @@ export default function Home() {
 
   const timer = (e: any) => {
     const time = new Date();
+
     time.setSeconds(time.getSeconds() + e);
     restart(time);
     pause();
   };
   const renderText = () => {
-    return [...lorem].map((char, index) => {
+    return [...sentence].map((char, index) => {
       let color;
       if (text[index]) {
         if (text[index] === char) Correct = Correct + 1;
@@ -104,21 +157,10 @@ export default function Home() {
             120 sec
           </button>
           {!isRunning && seconds === 0 && (
-            <div className="flex space-x-4 text-xl font-bold text-[#5d5f62]">
-              <div>
-                Correct Words- <span className="text-[#e2b714]">{Correct}</span>
-              </div>
-              <div>
-                Total Words-{" "}
-                <span className="text-[#e2b714]">{totalWords}</span>
-              </div>
-              <div>
-                Accuracy{" "}
-                <span className="text-[#e2b714]">
-                  {(Correct / totalWords).toFixed(2)}
-                </span>
-              </div>
-            </div>
+            <>
+            {redirectfunc()}
+             <Result Correct={Correct} totalWords={totalWords}/>
+             </>
           )}
         </div>
       </div>
