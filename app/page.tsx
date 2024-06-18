@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useTimer } from "react-timer-hook";
 import axios from 'axios'
 import { Result } from "@/components/ResultComponent";
+import Link from "next/link";
 
 export default function Home() {
   let Correct = 0;
@@ -41,7 +42,7 @@ export default function Home() {
  const redirectfunc=()=>{
   return router.push('/result')
  }
-  
+
    useEffect(()=>{
           const headers = {
             'Content-Type': 'application/json'
@@ -58,6 +59,8 @@ export default function Home() {
            
           try{
              const response= await axios.put(`/api/user/${Object.values(session.data.user)[1]}/scores`,data,{headers});
+             const id=Object.values(session.data.user)[1];
+             localStorage.setItem('userId',id);
              console.log(response.data);
           }catch(error)
           {
@@ -156,6 +159,7 @@ export default function Home() {
           >
             120 sec
           </button>
+        
           {!isRunning && seconds === 0 && (
             <>
             {redirectfunc()}

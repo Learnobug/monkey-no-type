@@ -65,7 +65,7 @@ export async function GET(req:any) {
                 return NextResponse.json({ error:`User Not Exists`},{status:400})
             }
           
-              return NextResponse.json({ message: 'Scores', scores: userWithScores.scores },{status:201});
+              return NextResponse.json({ score:userWithScores.scores },{status:201});
     }
     catch(error){
       return NextResponse.json({
