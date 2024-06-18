@@ -26,6 +26,7 @@ export default function Home() {
   } = useTimer();
   const router = useRouter();
   const session = useSession();
+  console.log(session);
   if (!session) {
     router.push("/api/auth/signin");
   }

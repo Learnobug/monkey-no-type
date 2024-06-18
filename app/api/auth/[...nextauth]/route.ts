@@ -1,50 +1,20 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcrypt' 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import NextAuth from 'next-auth'
+import AppleProvider from 'next-auth/providers/apple'
+import FacebookProvider from 'next-auth/providers/facebook'
+import GoogleProvider from 'next-auth/providers/google'
+import EmailProvider from 'next-auth/providers/email'
 
 const handler = NextAuth({
   providers: [
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'text', placeholder: '' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        try {
-          const hashedPassword = await bcrypt.hash(credentials?.password, 10);
-          const existingUser = await prisma.user.findFirst({
-            where: { email: credentials?.email }
-          });
-
-          if (existingUser) {
-            const passwordValid = await bcrypt.compare(credentials?.password, existingUser.password);
-            if (passwordValid) {
-              return { id: existingUser.id.toString(), email: existingUser.email };
-            }
-            return null;
-          }
-
-          const newUser = await prisma.user.create({
-            data: { email: credentials?.email, password: hashedPassword }
-          });
-
-          if (newUser) {
-            return { id: newUser.id.toString(), email: newUser.email };
-          }
-
-          return null; // Should not reach here under normal circumstances
-        } catch (error) {
-          console.error('Authorization error:', error);
-          return null;
-        }
-      },
+    // OAuth authentication providers...
+    GoogleProvider({
+      clientId: process.env.GOOGLE_ID || '',
+      clientSecret: process.env.GOOGLE_SECRET || ''
     }),
-  ],
-  secret: process.env.NEXTAUTH_SECRET,
-});
+    // Passwordless / email sign in
+  ]
+  
+})
 
-export { handler as GET, handler as POST };
+export { handler as POST, handler as GET}
+
