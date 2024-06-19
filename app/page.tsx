@@ -16,10 +16,12 @@ export default function Home() {
 
   const time: any = new Date();
   const[lorem,setLorem]=useState('');
-  const [sentence,setSentence]=useState('');  
-  let resulttime=0;
+  const [sentence,setSentence]=useState('');
   const router = useRouter();
   const session = useSession();
+  const [dataStored, setDataStored] = useState(false);
+  const [resulttime,setResulttime]=useState(0);
+  const [timerEnded, setTimerEnded] = useState(false); 
   const [text, setText] = useState("");
   const {
     totalSeconds,
@@ -32,18 +34,33 @@ export default function Home() {
     pause,
     resume,
     restart,
-  } = useTimer();
+  } = useTimer({
+    onExpire: () => setTimerEnded(true) // Set timerEnded to true when the timer ends
+  });
 
-  if (!session) {
+  if (session.status=='unauthenticated') {
     router.push("/api/auth/signin");
   }
   time.setSeconds(time.getSeconds());
 
  const redirectfunc=()=>{
+  const inputarray=text.split(' ')
+  const orignalarray=sentence.split(' ');
+
+  [...inputarray].map((char,indx)=>{
+         if(char === orignalarray[indx])
+          {
+             Correct=Correct+1;
+          }
+  })
+  console.log(inputarray);
+   totalWords=inputarray.length;
+   
   return router.push('/result')
  }
 
    useEffect(()=>{
+    if (timerEnded && !dataStored) {
           const headers = {
             'Content-Type': 'application/json'
         };
@@ -56,7 +73,6 @@ export default function Home() {
           };
           
         const storedata=async () =>{
-           
           try{
              const response= await axios.put(`/api/user/${Object.values(session.data.user)[1]}/scores`,data,{headers});
              const id=Object.values(session.data.user)[1];
@@ -68,7 +84,9 @@ export default function Home() {
           }
         }
           storedata();
-   },[isRunning])
+      }
+        
+   },[isRunning, dataStored])
 
 
 
@@ -76,7 +94,7 @@ export default function Home() {
     const fetchData = async () => {
       try {
         const response = await axios.get('/api/word');
-        setSentence(JSON.stringify(response.data.randomParagraph));
+        setSentence(response.data.randomParagraph);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -98,17 +116,16 @@ export default function Home() {
 
   const timer = (e: any) => {
     const time = new Date();
-
     time.setSeconds(time.getSeconds() + e);
     restart(time);
     pause();
+    setResulttime(e);
+    setDataStored(false);
   };
   const renderText = () => {
     return [...sentence].map((char, index) => {
       let color;
       if (text[index]) {
-        if (text[index] === char) Correct = Correct + 1;
-        totalWords = totalWords + 1;
         color = text[index] === char ? "white" : "red";
       }
       return <span style={{ color }}>{char}</span>;
