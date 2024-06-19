@@ -128,7 +128,7 @@ export default function Home() {
       if (text[index]) {
         color = text[index] === char ? "white" : "red";
       }
-      return <span style={{ color }}>{char}</span>;
+      return <span key={index} style={{ color }}>{char}</span>;
     });
   };
 
