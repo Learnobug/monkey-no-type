@@ -19,6 +19,7 @@ model User{
   password String
   username String @default("Guest")
   scores      Score[]
+  multiplayerAsPlayer Multiplayer[]
 }
 
 model Score{
@@ -29,5 +30,17 @@ model Score{
   WordsCount Int
   CorrectWords Int
   Totaltime Int
+  multiplayerScore Multiplayer[]
+  timestamp DateTime @default(now())
+}
+
+model Multiplayer{
+  id Int @id @default(autoincrement())
+  player   User    @relation(fields: [playerId],references: [id])
+  playerId  Int
+  playerScores Score @relation(fields: [ScoreId],references: [id])
+  ScoreId Int
+  gameName   String
+  roomId   String
   timestamp DateTime @default(now())
 }

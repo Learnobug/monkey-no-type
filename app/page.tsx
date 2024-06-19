@@ -7,13 +7,18 @@ import { useTimer } from "react-timer-hook";
 import axios from 'axios'
 import { Result } from "@/components/ResultComponent";
 import Link from "next/link";
+import { io } from 'socket.io-client';
 
 export default function Home() {
   let Correct = 0;
   let totalWords = 0;
   let countgames=0;
   
-
+  const socket=io('http://localhost:3001')
+   useEffect(()=>{
+    socket.emit('connection');
+   },[])
+ 
   const time: any = new Date();
   const[lorem,setLorem]=useState('');
   const [sentence,setSentence]=useState('');
