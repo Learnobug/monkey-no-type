@@ -1,32 +1,28 @@
 "use client";
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTimer } from "react-timer-hook";
-import axios from 'axios'
+import axios from "axios";
 import { Result } from "@/components/ResultComponent";
 import Link from "next/link";
-import { io } from 'socket.io-client';
+import { io } from "socket.io-client";
+import { getSocket } from "../socket";
 
 export default function Home() {
   let Correct = 0;
   let totalWords = 0;
-  let countgames=0;
-  
-  const socket=io('http://localhost:3001')
-   useEffect(()=>{
-    socket.emit('connection');
-   },[])
- 
+  let countgames = 0;
+
   const time: any = new Date();
-  const[lorem,setLorem]=useState('');
-  const [sentence,setSentence]=useState('');
+  const [lorem, setLorem] = useState("");
+  const [sentence, setSentence] = useState("");
   const router = useRouter();
   const session = useSession();
   const [dataStored, setDataStored] = useState(false);
-  const [resulttime,setResulttime]=useState(0);
-  const [timerEnded, setTimerEnded] = useState(false); 
+  const [resulttime, setResulttime] = useState(0);
+  const [timerEnded, setTimerEnded] = useState(false);
   const [text, setText] = useState("");
   const {
     totalSeconds,
@@ -40,81 +36,79 @@ export default function Home() {
     resume,
     restart,
   } = useTimer({
-    onExpire: () => setTimerEnded(true) // Set timerEnded to true when the timer ends
+    onExpire: () => setTimerEnded(true), // Set timerEnded to true when the timer ends
   });
 
-  if (session.status=='unauthenticated') {
+  if (session.status == "unauthenticated") {
     router.push("/api/auth/signin");
   }
   time.setSeconds(time.getSeconds());
 
- const redirectfunc=()=>{
-  const inputarray=text.split(' ')
-  const orignalarray=sentence.split(' ');
+  const redirectfunc = () => {
+    const inputarray = text.split(" ");
+    const orignalarray = sentence.split(" ");
 
-  [...inputarray].map((char,indx)=>{
-         if(char === orignalarray[indx])
-          {
-             Correct=Correct+1;
-          }
-  })
-  console.log(inputarray);
-   totalWords=inputarray.length;
-   
-  return router.push('/result')
- }
-
-   useEffect(()=>{
-    if (timerEnded && !dataStored) {
-          const headers = {
-            'Content-Type': 'application/json'
-        };
-         
-          const data = {
-            Accuracy: (Correct / totalWords).toFixed(2),
-            WordsCount: totalWords,
-            CorrectWords: Correct,
-            Totaltime: resulttime
-          };
-          
-        const storedata=async () =>{
-          try{
-             const response= await axios.put(`/api/user/${Object.values(session.data.user)[1]}/scores`,data,{headers});
-             const id=Object.values(session.data.user)[1];
-             localStorage.setItem('userId',id);
-             console.log(response.data);
-          }catch(error)
-          {
-            console.error('Error fetching data:', error); 
-          }
-        }
-          storedata();
+    [...inputarray].map((char, indx) => {
+      if (char === orignalarray[indx]) {
+        Correct = Correct + 1;
       }
-        
-   },[isRunning, dataStored])
+    });
+    console.log(inputarray);
+    totalWords = inputarray.length;
 
+    return router.push("/result");
+  };
 
+  useEffect(() => {
+    if (timerEnded && !dataStored) {
+      const headers = {
+        "Content-Type": "application/json",
+      };
+
+      const data = {
+        Accuracy: (Correct / totalWords).toFixed(2),
+        WordsCount: totalWords,
+        CorrectWords: Correct,
+        Totaltime: resulttime,
+      };
+
+      const storedata = async () => {
+        try {
+          const response = await axios.put(
+            `/api/user/${Object.values(session.data.user)[1]}/scores`,
+            data,
+            { headers }
+          );
+          const id = Object.values(session.data.user)[1];
+          localStorage.setItem("userId", id);
+          console.log(response.data);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+        }
+      };
+      storedata();
+    }
+  }, [isRunning, dataStored]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('/api/word');
+        const response = await axios.get("/api/word");
         setSentence(response.data.randomParagraph);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
       }
     };
-    
+
     fetchData();
   }, []);
-  
-   useEffect(()=>{
-      setSentence(lorem)
-   },[lorem])
 
- 
+  useEffect(() => {
+    setSentence(lorem);
+  }, [lorem]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    console.log(e);
     if (!isRunning) resume();
     setText(e.target.value);
   };
@@ -133,7 +127,11 @@ export default function Home() {
       if (text[index]) {
         color = text[index] === char ? "white" : "red";
       }
-      return <span key={index} style={{ color }}>{char}</span>;
+      return (
+        <span key={index} style={{ color }}>
+          {char}
+        </span>
+      );
     });
   };
 
@@ -181,12 +179,12 @@ export default function Home() {
           >
             120 sec
           </button>
-        
+
           {!isRunning && seconds === 0 && (
             <>
-            {redirectfunc()}
-             <Result Correct={Correct} totalWords={totalWords}/>
-             </>
+              {redirectfunc()}
+              <Result Correct={Correct} totalWords={totalWords} />
+            </>
           )}
         </div>
       </div>

@@ -19,8 +19,8 @@ export default function Page({ params }: { params: { roomId: string } }) {
       "joinRoom",
       {
         roomId: params.roomId,
-        name: session.data.user.name,
-        email: session.data.user.email,
+        name: session.data.user?.name ?? '',
+        email: session.data.user?.email ?? '',
       },
       (response: any) => {
         console.log(response);
@@ -29,12 +29,13 @@ export default function Page({ params }: { params: { roomId: string } }) {
 
     // Listen for updates to connected users
     socket.on("updateUserList", (users: any) => {
+      console.log(users);
       setConnectedUsers(users); // Update the state with the new list of users
     });
 
     // Clean up on component unmount
     return () => {
-      socket.emit("leaveRoom", params.roomId);
+      socket.emit("disconnect", params.roomId);
       socket.disconnect();
     };
   }, [params.roomId, session.status]);
@@ -54,7 +55,7 @@ export default function Page({ params }: { params: { roomId: string } }) {
           <h1>Connected Users</h1>
           <ul>
             {connectedUsers.map((user: any) => (
-              <li key={user.id}>{user.name}</li>
+              <li key={user.id}>{user.email}</li>
             ))}
           </ul>
         </div>
