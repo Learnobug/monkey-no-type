@@ -5,41 +5,55 @@ const io = require("socket.io")(3001, {
 let roomUsers = {};
 io.on("connection", (socket) => {
   console.log("user is connected", socket.id);
+
   socket.on("joinRoom", ({ roomId, name, email }, callback) => {
-    socket.join(roomId);
+    // Initialize the room if it doesn't exist
     if (!roomUsers[roomId]) {
       roomUsers[roomId] = [];
     }
-    const isUserInRoom = roomUsers[roomId].some((user) => user.email === email);
+
+    // Check if the user is already in the room
+    const isUserInRoom = roomUsers[roomId].some((user) => user.socketId === socket.id);
     if (!isUserInRoom) {
-      roomUsers[roomId].push({ name, email });
+      // Proceed with joining the room
+      socket.join(roomId);
+      roomUsers[roomId].push({ name, email, socketId: socket.id }); // Include socketId in user's info
       io.to(roomId).emit("updateUserList", roomUsers[roomId]);
-      socket.to(roomId).emit("userConnected", { name, email });
+      console.log(roomUsers[roomId]);
+      io.to(roomId).emit("userConnected", { name, email });
+
+      // Optional: Send acknowledgment back to the joining user
+      callback({ success: true, message: `Joined room ${roomId} as ${name}` });
+
+      console.log(`${name} joined room: ${roomId}`);
+    } else {
+      // Handle the case where the user is already in the room
+      console.log(`User ${name} with socket ID ${socket.id} is already in room: ${roomId}`);
+      // Optionally, send a message back to the user
+      callback({ success: false, message: `You are already in room ${roomId}` });
     }
-
-    // Optional: Send acknowledgment back to the joining user
-    callback({ success: true, message: `Joined room ${roomId} as ${name}` });
-
-    console.log(`${name} joined room: ${roomId}`);
   });
+
   socket.on("Recieve Sentence", (RoomId, Sentence) => {
     socket.broadcast.to(RoomId).emit("Sentence", Sentence);
   });
-//   // socket.on("disconnect", () => {
-//   // Object.keys(roomUsers).forEach((roomId) => {
-//   //   const userIndex = roomUsers[roomId].findIndex(
-//   //     (user) => user.id === socket.id
-//   //   );
-//   //   if (userIndex !== -1) {
-//   //     const [user] = roomUsers[roomId].splice(userIndex, 1); // Remove the user
-//   //     io.to(roomId).emit("updateUserList", roomUsers[roomId]); // Update the user list for the room
-//   //     socket
-//   //       .to(roomId)
-//   //       .emit("userDisconnected", { name: user.name, email: user.email }); // Notify the room
-//   //     console.log(`${user.name} left room: ${roomId}`);
-//   //   }
-//   // });
-// });
+  socket.on('disconnect',()=>{
+    let user = null;
+    for (const roomId in roomUsers) {
+      const index = roomUsers[roomId].findIndex((user) => user.socketId === socket.id);
+      if (index !== -1) {
+        user = roomUsers[roomId].splice(index, 1)[0];
+        io.to(roomId).emit("updateUserList", roomUsers[roomId]);
+        io.to(roomId).emit("userDisconnected", user);
+        console.log(`${user.name} left room: ${roomId}`);
+        break;
+      }
+    }
+  })
+  // Uncomment and adjust the disconnect logic as needed
+  // socket.on("disconnect", () => {
+  //   // Your disconnect logic here
+  // });
 });
 console.log("hello");
 //Chat Connection
