@@ -1,23 +1,20 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import io from "socket.io-client";
-import { useSession } from "next-auth/react";
 import { getSocket } from "../../../socket";
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import Chat from "@/components/Chat";
 
 export default function Page({ params }: { params: { roomId: string } }) {
   const session = useSession();
-  const [loading, setLoading] = useState(true);
-  const [owner, setOwner] = useState('');
-
+  
   const [connectedUsers, setConnectedUsers] = useState([]);
 
   useEffect(() => {
     if (session.status !== "authenticated") return;
     const socket = getSocket();
 
-
+    
     socket.emit(
       "joinRoom",
       {
@@ -30,33 +27,43 @@ export default function Page({ params }: { params: { roomId: string } }) {
       }
     );
 
-
     socket.on("updateUserList", (users: any) => {
       console.log(users);
       setConnectedUsers(users);
     });
 
     return () => {
-      // socket.emit("disconnect", params.roomId);
       socket.disconnect();
     };
-
-
   }, [params.roomId, session.status]);
+
   return (
     <div className="w-full h-screen flex">
-      <div className="w-3/4">chat here</div>
+      <Chat roomId={params.roomId} />
       <div className="flex flex-col justify-center items-center">
-        <div className="h-1/2">
-          <h1>Room ID: {params.roomId}</h1>
-          <button className="px-4 py-2 bg-gray-200 mx-2">Start Game</button>
-          <Link href={'/'} className="px-4 py-2 bg-gray-200">Leave ROom</Link>
+        <div className="h-1/2 flex flex-col justify-center items-center gap-4">
+          <h1 className="text-2xl text-white">
+            Room ID: <span className="text-[#e2b714]">{params.roomId}</span>
+          </h1>
+          <button className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl">
+            Start Game
+          </button>
+          <Link
+            href={"/"}
+            className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 text-center hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl"
+          >
+            Leave Room
+          </Link>
         </div>
         <div className="h-1/2">
-          <h1>Connected Users</h1>
+          <h1 className="text-xl text-[#646669] font-bold">Connected Users</h1>
           <ul>
             {connectedUsers.map((user: any, index) => (
-              <li key={index}>{user.email}</li>
+              <li className="text-[#e2b714]" key={index}>
+                {index + 1}
+                {". "}
+                {user.email}
+              </li>
             ))}
           </ul>
         </div>

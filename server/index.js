@@ -35,7 +35,10 @@ io.on("connection", (socket) => {
       callback({ success: false, message: `You are already in room ${roomId}` });
     }
   });
-
+  socket.on("Send Message", (RoomId, msg) => {
+    console.log(msg);
+    socket.broadcast.to(RoomId).emit("chatMessage", msg);
+  });
   socket.on("Recieve Sentence", (RoomId, Sentence) => {
     socket.broadcast.to(RoomId).emit("Sentence", Sentence);
   });
