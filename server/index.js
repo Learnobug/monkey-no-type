@@ -7,9 +7,11 @@ io.on("connection", (socket) => {
   console.log("user is connected", socket.id);
 
   socket.on("joinRoom", ({ roomId, name, email }, callback) => {
-    // Initialize the room if it doesn't exist
+    let isOwner = false;
     if (!roomUsers[roomId]) {
       roomUsers[roomId] = [];
+      isOwner = true;
+      io.to(roomId).emit("RoomInfo", {ownerEmail: email, ownerId: socket.id}); // Send Room Owner Email
     }
 
     // Check if the user is already in the room
@@ -17,10 +19,10 @@ io.on("connection", (socket) => {
     if (!isUserInRoom) {
       // Proceed with joining the room
       socket.join(roomId);
-      roomUsers[roomId].push({ name, email, socketId: socket.id }); // Include socketId in user's info
+      roomUsers[roomId].push({ name, email, socketId: socket.id, isOwner }); // Include socketId in user's info
       io.to(roomId).emit("updateUserList", roomUsers[roomId]);
       console.log(roomUsers[roomId]);
-      io.to(roomId).emit("userConnected", { name, email });
+      io.to(roomId).emit("userConnected", { name, email, isOwner });
 
       // Optional: Send acknowledgment back to the joining user
       callback({ success: true, message: `Joined room ${roomId} as ${name}` });

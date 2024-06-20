@@ -4,10 +4,12 @@ import io from "socket.io-client";
 import { useSession } from "next-auth/react";
 import { getSocket } from "../../../socket";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default function Page({ params }: { params: { roomId: string } }) {
   const session = useSession();
   const [loading, setLoading] = useState(true);
+  const [owner, setOwner] = useState('');
 
   const [connectedUsers, setConnectedUsers] = useState([]);
 
@@ -15,7 +17,7 @@ export default function Page({ params }: { params: { roomId: string } }) {
     if (session.status !== "authenticated") return;
     const socket = getSocket();
 
-    
+
     socket.emit(
       "joinRoom",
       {
@@ -34,15 +36,13 @@ export default function Page({ params }: { params: { roomId: string } }) {
       setConnectedUsers(users);
     });
 
-
     return () => {
-      socket.emit("disconnect", params.roomId);
+      // socket.emit("disconnect", params.roomId);
       socket.disconnect();
     };
 
 
   }, [params.roomId, session.status]);
-
   return (
     <div className="w-full h-screen flex">
       <div className="w-3/4">chat here</div>
@@ -50,7 +50,7 @@ export default function Page({ params }: { params: { roomId: string } }) {
         <div className="h-1/2">
           <h1>Room ID: {params.roomId}</h1>
           <button className="px-4 py-2 bg-gray-200 mx-2">Start Game</button>
-          <button className="px-4 py-2 bg-gray-200">Leave ROom</button>
+          <Link href={'/'} className="px-4 py-2 bg-gray-200">Leave ROom</Link>
         </div>
         <div className="h-1/2">
           <h1>Connected Users</h1>
