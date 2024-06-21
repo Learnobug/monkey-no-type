@@ -49,7 +49,7 @@ return (
                     <div className="text-white text-lg w-32 text-center">{score.Accuracy}</div>
                     <div className="text-white text-lg w-32 text-center">English {score.Totaltime}</div>
                     <div className="text-white text-lg w-32 text-center">{score.CorrectWords}</div>
-                    {/* <div className="text-white text-lg w-32 text-center">{new Date(score.timestamp).toLocaleString()}</div> */}
+                    <div className="text-white text-lg w-32 text-center">{new Date(score.timestamp).toLocaleString()}</div>
                 </div>
             ))}
         </div>
