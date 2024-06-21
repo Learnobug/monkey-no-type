@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { getSocket } from "../../../socket";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Chat from "@/components/Chat";
@@ -8,12 +9,17 @@ import axios from "axios";
 
 export default function Page({ params }: { params: { roomId: string } }) {
   const session = useSession();
-  
+  localStorage.setItem("roomId",params.roomId);
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [sentence, setSentence] = useState("");
-
+  const router=useRouter();
+  if (session.status == "unauthenticated") {
+    router.push("/api/auth/signin");
+  }
   useEffect(() => {
+
     if (session.status !== "authenticated") return;
+   
     const socket = getSocket();
 
     
@@ -37,6 +43,7 @@ export default function Page({ params }: { params: { roomId: string } }) {
     socket.on("sentence",(data:any)=>{
       console.log(data);
       localStorage.setItem("sentence",data);
+      router.push(`/room/${params.roomId}/game`)
     })
 
     return () => {
@@ -46,13 +53,16 @@ export default function Page({ params }: { params: { roomId: string } }) {
   const startGame = async () => {
     const gameData = await fetchGameData();
     const socket = getSocket();
-    socket.emit("startGame", params.roomId, sentence);
-    localStorage.setItem("sentence",sentence);
+    socket.emit("startGame", params.roomId, gameData);
+    localStorage.setItem("sentence",gameData);
+    router.push(`/room/${params.roomId}/game`)
+    
   };
 
   const fetchGameData = async () => {
     const response = await axios.get("/api/word");
     setSentence(response.data.randomParagraph);
+    return response.data.randomParagraph;
   };
 
   const filteredUsers = connectedUsers.filter((user: any) => user.isOwner === true);

@@ -8,16 +8,17 @@ import axios from "axios";
 import { Result } from "@/components/ResultComponent";
 import Link from "next/link";
 import { io } from "socket.io-client";
-import { getSocket } from "../socket";
+import { getSocket } from "../../../../socket"
 
-export default function Home() {
+export default function Home({ params }: { params: { roomId: string } }) {
   let Correct = 0;
   let totalWords = 0;
   let countgames = 0;
 
   const time: any = new Date();
   const [lorem, setLorem] = useState("");
-  const [sentence, setSentence] = useState("");
+  const sentence=localStorage.getItem("sentence")
+
   const router = useRouter();
   const session = useSession();
   const [dataStored, setDataStored] = useState(false);
@@ -36,7 +37,7 @@ export default function Home() {
     resume,
     restart,
   } = useTimer({
-    onExpire: () => setTimerEnded(true), // Set timerEnded to true when the timer ends
+    onExpire: () => setTimerEnded(true), 
   });
 
   if (session.status == "unauthenticated") {
@@ -46,7 +47,7 @@ export default function Home() {
 
   const redirectfunc = () => {
     const inputarray = text.split(" ");
-    const orignalarray = sentence.split(" ");
+    const orignalarray = sentence?.split(" ");
 
     [...inputarray].map((char, indx) => {
       if (char === orignalarray[indx]) {
@@ -56,11 +57,8 @@ export default function Home() {
     console.log(inputarray);
     totalWords = inputarray.length;
 
-    return router.push("/result");
+    return router.push("/result/room");
   };
-
-  const id = session.data?.user.id;
-  localStorage.setItem("userId", id);
 
   useEffect(() => {
     if (timerEnded && !dataStored) {
@@ -69,21 +67,22 @@ export default function Home() {
       };
 
       const data = {
+        roomId:params.roomId,
         Accuracy: (Correct / totalWords).toFixed(2),
         WordsCount: totalWords,
         CorrectWords: Correct,
         Totaltime: resulttime,
       };
-
+       
       const storedata = async () => {
         try {
-          const response = await axios.put(
-            `/api/user/${id}/scores`,
+            const userId=localStorage.getItem("userId");
+          const response = await axios.post(
+            `/api/user/${userId?.toString()}/${localStorage.getItem("roomId")?.toString()}`,
             data,
             { headers }
           );
-          const id = Object.values(session.data.user)[1];
-          localStorage.setItem("userId", id);
+          redirectfunc();
           console.log(response.data);
         } catch (error) {
           console.error("Error fetching data:", error);
@@ -93,37 +92,21 @@ export default function Home() {
     }
   }, [isRunning, dataStored]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("/api/word");
-        setSentence(response.data.randomParagraph);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    setSentence(lorem);
-  }, [lorem]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     console.log(e);
-    if (!isRunning) resume();
     setText(e.target.value);
   };
 
-  const timer = (e: any) => {
-    const time = new Date();
-    time.setSeconds(time.getSeconds() + e);
-    restart(time);
-    pause();
-    setResulttime(e);
-    setDataStored(false);
-  };
+  useEffect(() => {
+        const time = new Date();
+        time.setSeconds(time.getSeconds() + 15);
+        restart(time);
+        setDataStored(false);
+    
+  }, []);
+ 
+  
   const renderText = () => {
     return [...sentence].map((char, index) => {
       let color;
@@ -158,35 +141,10 @@ export default function Home() {
           <span>{minutes}</span>:<span>{seconds}</span>
         </div>
         <div>
-          <button
-            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
-            onClick={() => timer(15)}
-          >
-            15 sec
-          </button>
-          <button
-            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
-            onClick={() => timer(30)}
-          >
-            30 sec
-          </button>
-          <button
-            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
-            onClick={() => timer(60)}
-          >
-            60 sec
-          </button>
-          <button
-            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
-            onClick={() => timer(120)}
-          >
-            120 sec
-          </button>
 
           {!isRunning && seconds === 0 && (
             <>
-              {redirectfunc()}
-              <Result Correct={Correct} totalWords={totalWords} />
+              
             </>
           )}
         </div>

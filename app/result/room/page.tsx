@@ -10,9 +10,13 @@ export default function HistoryPage() {
   useEffect(() => {
       const userId = localStorage.getItem("userId");
     const getData = async () => {
+        
+        const roomId=localStorage.getItem("roomId")?.toString()
+        
       try {
-        const response = await axios.get(`/api/user/${userId}/scores`);
+        const response = await axios.get(`/api/user/${userId}/${roomId}`);
         setScores(response.data.score.reverse());
+
         console.log(response.data.score);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -29,6 +33,7 @@ return (
         <div className="w-full">
             <div className="flex justify-around">
                 <div className="text-[#646669] text-xl w-32 text-center">Sr. No</div>
+                <div className="text-[#646669] text-xl w-32 text-center">User Id</div>
                 <div className="text-[#646669] text-xl w-32 text-center">WPM</div>
                 <div className="text-[#646669] text-xl w-32 text-center">Accuracy</div>
                 <div className="text-[#646669] text-xl w-32 text-center">Mode</div>
@@ -38,7 +43,8 @@ return (
 
             {scores.map((score, indx) => (
                 <div key={indx} className="flex justify-around my-2">
-                    <div className="text-white text-xl w-32 text-center">{indx}</div>
+                    <div className="text-white text-xl w-32 text-center">{indx+1}</div>
+                    <div className="text-white text-xl w-32 text-center">{score.userId}</div>
                     <div className="text-white text-lg w-32 text-center">{score.WordsCount*60/score.Totaltime}</div>
                     <div className="text-white text-lg w-32 text-center">{score.Accuracy}</div>
                     <div className="text-white text-lg w-32 text-center">English {score.Totaltime}</div>
