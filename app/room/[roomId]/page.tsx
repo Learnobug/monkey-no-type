@@ -4,17 +4,34 @@ import { getSocket } from "../../../socket";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import Chat from "@/components/Chat";
+import axios from 'axios'
+import { fetchData } from "next-auth/client/_utils";
 
 export default function Page({ params }: { params: { roomId: string } }) {
   const session = useSession();
   
   const [connectedUsers, setConnectedUsers] = useState([]);
+  const [isowner,setIsowner]=useState(false);
+  
+  const [sentence, setSentence] = useState("");
 
   useEffect(() => {
-    if (session.status !== "authenticated") return;
-    const socket = getSocket();
+    const fetchData = async () => {
+      try {
+        const response = await axios.get("/api/word");
+        setSentence(response.data.randomParagraph);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
 
-    
+    fetchData();
+  }, [params.roomId, session.status,connectedUsers]);
+
+
+  const socket = getSocket();
+  useEffect(() => {
+    if (session.status !== "authenticated") return;    
     socket.emit(
       "joinRoom",
       {
@@ -26,17 +43,41 @@ export default function Page({ params }: { params: { roomId: string } }) {
         console.log(response);
       }
     );
-
-    socket.on("updateUserList", (users: any) => {
+   
+    socket.on("updateUserList", (users) => {
       console.log(users);
       setConnectedUsers(users);
     });
+    connectedUsers.map((e)=>{
+      if(e.isOwner)
+        {
+          localStorage.setItem("isowner", e.isOwner);
+          localStorage.setItem("sentence",sentence)
+          setIsowner(true);
+        }
+        socket.on("SendSentenceback",(sentence)=>{
+          localStorage.setItem("sentence",sentence) 
+      })
+     })
+     console.log("isowner",isowner)
+     
+     socket.on("SendSentenceback",(sentence)=>{
+      localStorage.setItem("sentence",sentence) 
+  })
+ 
 
     return () => {
       socket.disconnect();
     };
-  }, [params.roomId, session.status]);
-
+  }, [params.roomId, session.status,connectedUsers]);
+  
+  useEffect(() => {
+    console.log("Inside useEffect for sending sentence");
+    if (isowner) {
+      socket.emit("Sendingsentence", params.roomId,sentence);
+    }
+  }, [isowner, sentence,localStorage]);
+  
   return (
     <div className="w-full h-screen flex">
       <Chat roomId={params.roomId} />
@@ -45,9 +86,9 @@ export default function Page({ params }: { params: { roomId: string } }) {
           <h1 className="text-2xl text-white">
             Room ID: <span className="text-[#e2b714]">{params.roomId}</span>
           </h1>
-          <button className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl">
+        {isowner && (<button onClick={()=>fetchdata()} className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl">
             Start Game
-          </button>
+          </button>)}   
           <Link
             href={"/"}
             className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 text-center hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl"

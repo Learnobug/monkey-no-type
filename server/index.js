@@ -6,22 +6,22 @@ let roomUsers = {};
 io.on("connection", (socket) => {
   console.log("user is connected", socket.id);
 
+  
   socket.on("joinRoom", ({ roomId, name, email }, callback) => {
     let isOwner = false;
     if (!roomUsers[roomId]) {
       roomUsers[roomId] = [];
       isOwner = true;
-      io.to(roomId).emit("RoomInfo", {ownerEmail: email, ownerId: socket.id}); // Send Room Owner Email
+      io.to(roomId).emit("RoomInfo", {ownerEmail: email, ownerId: socket.id}); 
     }
-
-    // Check if the user is already in the room
     const isUserInRoom = roomUsers[roomId].some((user) => user.socketId === socket.id);
     if (!isUserInRoom) {
       // Proceed with joining the room
       socket.join(roomId);
       roomUsers[roomId].push({ name, email, socketId: socket.id, isOwner }); // Include socketId in user's info
+    
       io.to(roomId).emit("updateUserList", roomUsers[roomId]);
-      console.log(roomUsers[roomId]);
+     
       io.to(roomId).emit("userConnected", { name, email, isOwner });
 
       // Optional: Send acknowledgment back to the joining user
@@ -35,6 +35,10 @@ io.on("connection", (socket) => {
       callback({ success: false, message: `You are already in room ${roomId}` });
     }
   });
+  socket.on("Sendingsentence",(roomId,sentence)=>{
+    console.log("sentence",sentence)
+    io.to(roomId).emit("SendSentenceback",sentence)
+  })
   socket.on("Send Message", (RoomId, msg) => {
     console.log(msg);
     socket.broadcast.to(RoomId).emit("chatMessage", msg);
