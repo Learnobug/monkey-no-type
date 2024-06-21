@@ -54,10 +54,10 @@ export default function Home({ params }: { params: { roomId: string } }) {
         Correct = Correct + 1;
       }
     });
+    console.log("coorect",Correct);
     console.log(inputarray);
     totalWords = inputarray.length;
 
-    return router.push("/result/room");
   };
 
   useEffect(() => {
@@ -66,6 +66,8 @@ export default function Home({ params }: { params: { roomId: string } }) {
         "Content-Type": "application/json",
       };
 
+      redirectfunc();
+
       const data = {
         roomId:params.roomId,
         Accuracy: (Correct / totalWords).toFixed(2),
@@ -73,6 +75,8 @@ export default function Home({ params }: { params: { roomId: string } }) {
         CorrectWords: Correct,
         Totaltime: resulttime,
       };
+
+      console.log('Data is',data);
        
       const storedata = async () => {
         try {
@@ -82,8 +86,9 @@ export default function Home({ params }: { params: { roomId: string } }) {
             data,
             { headers }
           );
-          redirectfunc();
           console.log(response.data);
+          return router.push("/result/room");
+
         } catch (error) {
           console.error("Error fetching data:", error);
         }
