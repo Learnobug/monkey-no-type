@@ -44,7 +44,6 @@ export default function Page({ params }: { params: { roomId: string } }) {
     };
   }, [params.roomId, session.status]);
   const startGame = async () => {
-    // Fetch game data here, for example:
     const gameData = await fetchGameData();
     const socket = getSocket();
     socket.emit("startGame", params.roomId, sentence);
@@ -56,6 +55,10 @@ export default function Page({ params }: { params: { roomId: string } }) {
     setSentence(response.data.randomParagraph);
   };
 
+  const filteredUsers = connectedUsers.filter((user: any) => user.isOwner === true);
+
+  const owner = filteredUsers[0]?.email === session.data?.user?.email;
+
 
   return (
     <div className="w-full h-screen flex">
@@ -65,9 +68,9 @@ export default function Page({ params }: { params: { roomId: string } }) {
           <h1 className="text-2xl text-white">
             Room ID: <span className="text-[#e2b714]">{params.roomId}</span>
           </h1>
-          <button onClick={startGame} className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl">
+          {owner && <button onClick={startGame} className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl">
             Start Game
-          </button>
+          </button>}
           <Link
             href={"/"}
             className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 text-center hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl"
