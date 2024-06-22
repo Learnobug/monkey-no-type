@@ -40,7 +40,7 @@ export default function Home() {
   });
 
 
-  if (session.status == "unauthenticated" || !localStorage.getItem("userId")) {
+  if (session.status == "unauthenticated") {
     router.push("/api/auth/signin");
   }
   time.setSeconds(time.getSeconds());
@@ -67,9 +67,9 @@ export default function Home() {
   }
  //@ts-ignore
   let id = session.data?.user?.id ;
-  localStorage.setItem("userId", id);
-   
+  
   useEffect(() => {
+    localStorage.setItem("userId", id);
     if (timerEnded && !dataStored) {
       const headers = {
         "Content-Type": "application/json",
