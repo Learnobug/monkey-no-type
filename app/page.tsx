@@ -14,7 +14,7 @@ export default function Home() {
   let Correct = 0;
   let totalWords = 0;
   let countgames = 0;
-
+  
   const time: any = new Date();
   const [lorem, setLorem] = useState("");
   const [sentence, setSentence] = useState("");
@@ -39,11 +39,12 @@ export default function Home() {
     onExpire: () => setTimerEnded(true), // Set timerEnded to true when the timer ends
   });
 
+
   if (session.status == "unauthenticated" || !localStorage.getItem("userId")) {
     router.push("/api/auth/signin");
   }
   time.setSeconds(time.getSeconds());
-
+  
   const redirectfunc = () => {
     const inputarray = text.split(" ");
     const orignalarray = sentence.split(" ");
@@ -59,9 +60,15 @@ export default function Home() {
     return router.push("/result");
   };
 
+  const redirectfunction = ()=>{
+    const randomNumberString = length => Array.from({length}, () => Math.floor(Math.random() * 10)).join('');
+    const room= randomNumberString(10)
+    router.push(`/room/${room}`);
+  }
+
   const id = session.data?.user.id;
   localStorage.setItem("userId", id);
-
+   
   useEffect(() => {
     if (timerEnded && !dataStored) {
       const headers = {
@@ -183,14 +190,18 @@ export default function Home() {
           >
             120 sec
           </button>
-
+         
           {!isRunning && seconds === 0 && (
             <>
               {redirectfunc()}
               <Result Correct={Correct} totalWords={totalWords} />
             </>
           )}
+
         </div>
+        <button onClick={redirectfunction} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
+   JOIN ROOM
+</button>
       </div>
     </>
   );
