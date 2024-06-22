@@ -6,7 +6,7 @@ let socket;
 export const getSocket = () => {
   // Only create the socket if it doesn't already exist
   if (!socket) {
-    socket = io("http://localhost:3001");
+    socket = io("https://monkey-no-type-1.onrender.com");
   }
   return socket;
 };
