@@ -36,7 +36,8 @@ export default function Home({ params }: { params: { roomId: string } }) {
     pause,
     resume,
     restart,
-  } = useTimer({expiryTimestamp: new Date(),
+    //@ts-ignore
+  } = useTimer({
     onExpire: () => setTimerEnded(true), 
   });
 
@@ -80,7 +81,7 @@ export default function Home({ params }: { params: { roomId: string } }) {
        
       const storedata = async () => {
         try {
-            const userId=localStorage.getItem("userId");
+          const userId=localStorage.getItem("userId");
           const response = await axios.post(
             `/api/user/${userId?.toString()}/${localStorage.getItem("roomId")?.toString()}`,
             data,

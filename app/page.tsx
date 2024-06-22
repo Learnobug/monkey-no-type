@@ -35,7 +35,8 @@ export default function Home() {
     pause,
     resume,
     restart,
-  } = useTimer({expiryTimestamp: new Date(),
+    //@ts-ignore
+  } = useTimer({
     onExpire: () => setTimerEnded(true), // Set timerEnded to true when the timer ends
   });
 
@@ -65,10 +66,13 @@ export default function Home() {
     const room= randomNumberString(10)
     router.push(`/room/${room}`);
   }
- //@ts-ignore
-  let id = session.data?.user?.id ;
-  
+
+    //@ts-ignore
+    let id = session.data?.user?.id ;
+
   useEffect(() => {
+ 
+    console.log(id);
     localStorage.setItem("userId", id);
     if (timerEnded && !dataStored) {
       const headers = {
@@ -98,7 +102,7 @@ export default function Home() {
       };
       storedata();
     }
-  }, [isRunning, dataStored]);
+  }, [isRunning, dataStored,session.status]);
 
   useEffect(() => {
     const fetchData = async () => {

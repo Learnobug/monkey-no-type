@@ -4,7 +4,7 @@ import axios from "axios";
 import { useSession } from "next-auth/react";
 
 export default function HistoryPage() {
-    const [scores, setScores] = useState<{ Accuracy: number; WordsCount: number; Totaltime: number; CorrectWords: number; }[]>([]);
+  const [scores, setScores] = useState<{ Accuracy: number; WordsCount: number; Totaltime: number; CorrectWords: number; userId: string; timestamp: string; }[]>([]);
   const session = useSession();
   
   useEffect(() => {
@@ -43,7 +43,7 @@ return (
                     <div className="text-white text-lg w-32 text-center">{score.Accuracy}</div>
                     <div className="text-white text-lg w-32 text-center">English {score.Totaltime}</div>
                     <div className="text-white text-lg w-32 text-center">{score.CorrectWords}</div>
-                    {/* <div className="text-white text-lg w-32 text-center">{new Date(score.timestamp).toLocaleString()}</div> */}
+                    <div className="text-white text-lg w-32 text-center">{new Date(score.timestamp).toLocaleString()}</div>
                 </div>
             ))}
         </div>
