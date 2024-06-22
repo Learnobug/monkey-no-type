@@ -1,5 +1,5 @@
 const io = require("socket.io")(3001, {
-  cors: { origin: "https://monkey-no-type.vercel.app/", methods: ["GET", "POST"] },
+  cors: { origin: "https://monkey-no-type.vercel.app", methods: ["GET", "POST"] },
 });
 
 let roomUsers = {};
