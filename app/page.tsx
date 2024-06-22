@@ -39,7 +39,7 @@ export default function Home() {
     onExpire: () => setTimerEnded(true), // Set timerEnded to true when the timer ends
   });
 
-  if (session.status == "unauthenticated") {
+  if (session.status == "unauthenticated" || !localStorage.getItem("userId")) {
     router.push("/api/auth/signin");
   }
   time.setSeconds(time.getSeconds());
@@ -77,8 +77,9 @@ export default function Home() {
 
       const storedata = async () => {
         try {
+
           const response = await axios.put(
-            `/api/user/${id}/scores`,
+            `/api/user/${session.data.user.id?.toString()}/scores`,
             data,
             { headers }
           );

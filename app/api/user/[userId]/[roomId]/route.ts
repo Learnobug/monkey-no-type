@@ -15,13 +15,12 @@ export async function POST(req: any) {
       const { roomId, Accuracy, WordsCount, CorrectWords, Totaltime } = reqbody;
       
       const userexist = await prisma.user.findFirst({
-          where: { id: userId }
+          where: { id: userId  }
       });
-
+      
       if (!userexist) {
           return NextResponse.json({ error: `User Not Exists` }, { status: 400 });
       }
-
       const score = await prisma.score.create({
           data: {
               user: { connect: { id: userexist.id } },
