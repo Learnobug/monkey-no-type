@@ -32,7 +32,7 @@ export async function POST(req: any) {
           include: { user: true },
       });
 
-      const result = await prisma.$transaction(async (prisma) => {
+      const result = await prisma.$transaction(async (prisma:any) => {
           const game = await prisma.multiplayer.findFirst({
               where: { roomId: roomId },
               include: {
