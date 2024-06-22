@@ -106,7 +106,7 @@ export async function PUT(req:any) {
 }
 
 //Delete User
-export async function Delete(req:any) {
+export async function DELETE(req:any) {
     try{
          const reqbody=await req.json();
          const {email,password}=reqbody;

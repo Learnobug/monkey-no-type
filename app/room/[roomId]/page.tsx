@@ -66,8 +66,10 @@ export default function Page({ params }: { params: { roomId: string } }) {
   };
 
   const filteredUsers = connectedUsers.filter((user: any) => user.isOwner === true);
-
+  //@ts-ignore
   const owner = filteredUsers[0]?.email === session.data?.user?.email;
+  
+  
 
 
   return (

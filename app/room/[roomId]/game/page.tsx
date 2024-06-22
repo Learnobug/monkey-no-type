@@ -36,7 +36,7 @@ export default function Home({ params }: { params: { roomId: string } }) {
     pause,
     resume,
     restart,
-  } = useTimer({
+  } = useTimer({expiryTimestamp: new Date(),
     onExpire: () => setTimerEnded(true), 
   });
 
@@ -47,8 +47,8 @@ export default function Home({ params }: { params: { roomId: string } }) {
 
   const redirectfunc = () => {
     const inputarray = text.split(" ");
-    const orignalarray = sentence?.split(" ");
-
+    const orignalarray = sentence?.split(" ")||[];
+   
     [...inputarray].map((char, indx) => {
       if (char === orignalarray[indx]) {
         Correct = Correct + 1;
@@ -113,6 +113,7 @@ export default function Home({ params }: { params: { roomId: string } }) {
  
   
   const renderText = () => {
+    //@ts-ignore
     return [...sentence].map((char, index) => {
       let color;
       if (text[index]) {

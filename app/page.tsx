@@ -35,7 +35,7 @@ export default function Home() {
     pause,
     resume,
     restart,
-  } = useTimer({
+  } = useTimer({expiryTimestamp: new Date(),
     onExpire: () => setTimerEnded(true), // Set timerEnded to true when the timer ends
   });
 
@@ -61,12 +61,12 @@ export default function Home() {
   };
 
   const redirectfunction = ()=>{
-    const randomNumberString = length => Array.from({length}, () => Math.floor(Math.random() * 10)).join('');
+    const randomNumberString = (length:any) => Array.from({length}, () => Math.floor(Math.random() * 10)).join('');
     const room= randomNumberString(10)
     router.push(`/room/${room}`);
   }
-
-  const id = session.data?.user.id;
+ //@ts-ignore
+  let id = session.data?.user?.id ;
   localStorage.setItem("userId", id);
    
   useEffect(() => {
@@ -86,11 +86,10 @@ export default function Home() {
         try {
 
           const response = await axios.put(
-            `/api/user/${session.data.user.id?.toString()}/scores`,
+            `/api/user/${id.toString()}/scores`,
             data,
             { headers }
           );
-          const id = Object.values(session.data.user)[1];
           localStorage.setItem("userId", id);
           console.log(response.data);
         } catch (error) {
@@ -133,6 +132,7 @@ export default function Home() {
     setDataStored(false);
   };
   const renderText = () => {
+    //@ts-ignore
     return [...sentence].map((char, index) => {
       let color;
       if (text[index]) {

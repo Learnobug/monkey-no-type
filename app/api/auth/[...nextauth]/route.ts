@@ -4,6 +4,16 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcryptjs from 'bcryptjs' 
 
 const prisma=new PrismaClient();
+interface Credentials {
+    email: string;
+    password: string;
+}
+
+interface User {
+    id: string;
+    email: string;
+}
+
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
@@ -13,6 +23,7 @@ const handler = NextAuth({
            email: { label: 'email', type: 'text', placeholder: '' },
           password: { label: 'password', type: 'password', placeholder: '' },
         },
+        //@ts-ignore
         async authorize(credentials: any) {
           const salt= await bcryptjs.genSalt(10)
           const hashedPassword = await bcryptjs.hash(credentials.password, salt);
@@ -67,6 +78,8 @@ const handler = NextAuth({
         return session
     }
   },
+
 })
+
 
 export { handler as GET, handler as POST }
