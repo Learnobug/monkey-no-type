@@ -1,36 +1,29 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Next.js Multiplayer Typing Game
+
+This project is a real-time multiplayer typing game built with Next.js, featuring live communication through WebSocket and data persistence using Prisma with a PostgreSQL database. It offers a dynamic and engaging platform for users to improve their typing skills while competing against others.
+
+## Features
+
+- **Real-Time Multiplayer Experience**: Engage in typing races with users from around the globe in real-time.
+- **User Authentication**: Secure login and registration system powered by NextAuth.
+- **Dynamic Scoring System**: Tracks Words Per Minute (WPM) and accuracy, providing instant feedback on performance.
+- **Persistent Leaderboards**: Compete for a spot on the global leaderboard with detailed records of each game session.
+
+## Technologies Used
+
+- **Frontend**: React, Next.js, Tailwind CSS for styling.
+- **Backend**: Node.js, Prisma ORM for database interactions, NextAuth for authentication.
+- **Database**: PostgreSQL.
+- **Real-Time Communication**: WebSocket for live game updates.
+- **Deployment**: Docker for containerization.
 
 ## Getting Started
 
-First, run the development server:
+To get a local copy up and running follow these simple steps.
 
+### Prerequisites
+
+- Node.js
+- npm
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+npm install npm@latest -g
