@@ -1,123 +1,105 @@
 "use client";
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTimer } from "react-timer-hook";
 import axios from "axios";
 import { Result } from "@/components/ResultComponent";
-import Link from "next/link";
-import { io } from "socket.io-client";
-import { getSocket } from "../../../../socket"
 
-export default function Home({ params }: { params: { roomId: string } }) {
-  let Correct = 0;
-  let totalWords = 0;
-  let countgames = 0;
+const GAME_DURATION = 15;
 
-  const time: any = new Date();
-  const [lorem, setLorem] = useState("");
-  const sentence=localStorage.getItem("sentence")
-
+export default function GamePage() {
   const router = useRouter();
-  const session = useSession();
-  const [dataStored, setDataStored] = useState(false);
-  const [resulttime, setResulttime] = useState(0);
-  const [timerEnded, setTimerEnded] = useState(false);
+  const { status } = useSession();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  const [sentence, setSentence] = useState("");
   const [text, setText] = useState("");
-  const {
-    totalSeconds,
-    seconds,
-    minutes,
-    hours,
-    days,
-    isRunning,
-    start,
-    pause,
-    resume,
-    restart,
-    //@ts-ignore
-  } = useTimer({
-    onExpire: () => setTimerEnded(true), 
+  const [timerEnded, setTimerEnded] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [result, setResult] = useState({ correct: 0, total: 0 });
+  const [dataStored, setDataStored] = useState(false);
+
+  // refs to avoid stale closures inside onExpire
+  const textRef = useRef("");
+  const sentenceRef = useRef("");
+
+  const makeExpiry = () => {
+    const t = new Date();
+    t.setSeconds(t.getSeconds() + GAME_DURATION);
+    return t;
+  };
+
+  const { seconds, minutes } = useTimer({
+    expiryTimestamp: makeExpiry(),
+    autoStart: true,
+    onExpire: () => {
+      const inputarray = textRef.current.trim().split(/\s+/);
+      const originalarray = sentenceRef.current.split(" ");
+      let correct = 0;
+      inputarray.forEach((word, i) => {
+        if (word === originalarray[i]) correct++;
+      });
+      const total = inputarray.filter(Boolean).length;
+      setResult({ correct, total });
+      setTimerEnded(true);
+      setShowResult(true);
+    },
   });
 
-  if (session.status == "unauthenticated") {
-    router.push("/api/auth/signin");
-  }
-  time.setSeconds(time.getSeconds());
-
-  const redirectfunc = () => {
-    const inputarray = text.split(" ");
-    const orignalarray = sentence?.split(" ")||[];
-   
-    [...inputarray].map((char, indx) => {
-      if (char === orignalarray[indx]) {
-        Correct = Correct + 1;
-      }
-    });
-    console.log("coorect",Correct);
-    console.log(inputarray);
-    totalWords = inputarray.length;
-
-  };
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
 
   useEffect(() => {
-    if (timerEnded && !dataStored) {
-      const headers = {
-        "Content-Type": "application/json",
-      };
+    const stored = localStorage.getItem("sentence") ?? "";
+    setSentence(stored);
+    sentenceRef.current = stored;
+  }, []);
 
-      redirectfunc();
+  // save score and redirect after timer ends
+  useEffect(() => {
+    if (!timerEnded || dataStored) return;
 
-      const data = {
-        roomId:params.roomId,
-        Accuracy: (Correct / totalWords).toFixed(2),
-        WordsCount: totalWords,
-        CorrectWords: Correct,
-        Totaltime: resulttime,
-      };
+    const userId = localStorage.getItem("userId");
+    const roomId = localStorage.getItem("roomId");
+    if (!userId || !roomId) return;
 
-      console.log('Data is',data);
-       
-      const storedata = async () => {
-        try {
-          const userId=localStorage.getItem("userId");
-          const response = await axios.post(
-            `/api/user/${userId?.toString()}/${localStorage.getItem("roomId")?.toString()}`,
-            data,
-            { headers }
-          );
-          console.log(response.data);
-          return router.push("/result/room");
+    const { correct, total } = result;
+    const data = {
+      roomId,
+      Accuracy: total > 0 ? (correct / total).toFixed(2) : "0",
+      WordsCount: total,
+      CorrectWords: correct,
+      Totaltime: GAME_DURATION,
+    };
 
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
-      };
-      storedata();
-    }
-  }, [isRunning, dataStored]);
-
+    axios
+      .post(`/api/user/${userId}/${roomId}`, data, {
+        headers: { "Content-Type": "application/json" },
+      })
+      .then(() => {
+        setDataStored(true);
+        router.push("/result/room");
+      })
+      .catch((e) => console.error("Error storing score:", e));
+  }, [timerEnded, dataStored, result]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log(e);
-    setText(e.target.value);
+    if (timerEnded) return;
+    const val = e.target.value;
+    setText(val);
+    textRef.current = val;
   };
 
-  useEffect(() => {
-        const time = new Date();
-        time.setSeconds(time.getSeconds() + 15);
-        restart(time);
-        setDataStored(false);
-    
-  }, []);
- 
-  
   const renderText = () => {
-    //@ts-ignore
+    if (!sentence) return null;
     return [...sentence].map((char, index) => {
-      let color;
-      if (text[index]) {
+      let color: string | undefined;
+      if (text[index] !== undefined) {
         color = text[index] === char ? "white" : "red";
       }
       return (
@@ -130,31 +112,43 @@ export default function Home({ params }: { params: { roomId: string } }) {
 
   return (
     <>
-      <div className="w-full h-96 flex justify-center items-center relative">
-        <div className="absolute h-48 w-[900px] p-4 text-3xl text-[#5d5f62] font-bold">
-          {renderText()}
+      <div className="w-full flex justify-center items-center relative mt-8">
+        <div className="relative w-[900px] h-56">
+          <div
+            ref={overlayRef}
+            className="absolute inset-0 p-4 text-2xl text-[#5d5f62] font-bold leading-relaxed overflow-hidden pointer-events-none whitespace-pre-wrap break-words"
+            style={{ fontFamily: "inherit" }}
+          >
+            {renderText()}
+          </div>
+          <textarea
+            ref={textareaRef}
+            className="absolute inset-0 w-full h-full p-4 z-10 text-2xl bg-transparent text-transparent border-none outline-none font-bold resize-none leading-relaxed overflow-y-scroll"
+            value={text}
+            onChange={handleChange}
+            onScroll={() => {
+              if (overlayRef.current && textareaRef.current) {
+                overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+              }
+            }}
+            style={{ caretColor: "#e2b714", fontFamily: "inherit" }}
+            autoFocus
+            disabled={timerEnded}
+          />
         </div>
-        <textarea
-          className="h-48 w-[900px] flex justify-center items-center p-4 z-10 text-3xl bg-transparent text-transparent border-none outline-none font-bold"
-          value={text}
-          onChange={handleChange}
-          style={{ caretColor: "#e2b714" }}
-          autoFocus
-          disabled={!isRunning && seconds === 0}
-        />
       </div>
-      <div className="w-full flex flex-col justify-start items-center space-y-10">
-        <div className="text-[#e2b714] text-5xl">
-          <span>{minutes}</span>:<span>{seconds}</span>
-        </div>
-        <div>
 
-          {!isRunning && seconds === 0 && (
-            <>
-              
-            </>
-          )}
+      <div className="w-full flex flex-col justify-start items-center space-y-8 mt-4">
+        <div className="text-[#e2b714] text-5xl font-mono">
+          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
         </div>
+
+        {showResult && (
+          <div className="mt-4 text-center">
+            <Result Correct={result.correct} totalWords={result.total} />
+            <p className="text-[#646669] mt-4 text-sm">Saving results...</p>
+          </div>
+        )}
       </div>
     </>
   );

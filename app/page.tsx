@@ -1,145 +1,131 @@
 "use client";
-import { useState, useEffect } from "react";
-import Image from "next/image";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTimer } from "react-timer-hook";
 import axios from "axios";
 import { Result } from "@/components/ResultComponent";
-import Link from "next/link";
-import { io } from "socket.io-client";
-import { getSocket } from "../socket";
 
 export default function Home() {
-  let Correct = 0;
-  let totalWords = 0;
-  let countgames = 0;
-  
-  const time: any = new Date();
-  const [lorem, setLorem] = useState("");
-  const [sentence, setSentence] = useState("");
   const router = useRouter();
-  const session = useSession();
-  const [dataStored, setDataStored] = useState(false);
-  const [resulttime, setResulttime] = useState(0);
-  const [timerEnded, setTimerEnded] = useState(false);
+  const { data: session, status } = useSession();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  const [sentence, setSentence] = useState("");
   const [text, setText] = useState("");
-  const {
-    totalSeconds,
-    seconds,
-    minutes,
-    hours,
-    days,
-    isRunning,
-    start,
-    pause,
-    resume,
-    restart,
-    //@ts-ignore
-  } = useTimer({
-    onExpire: () => setTimerEnded(true), // Set timerEnded to true when the timer ends
+  const [resulttime, setResulttime] = useState(60);
+  const [timerEnded, setTimerEnded] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [result, setResult] = useState({ correct: 0, total: 0 });
+  const [dataStored, setDataStored] = useState(false);
+  const [timerStarted, setTimerStarted] = useState(false);
+
+  // refs to avoid stale closures
+  const textRef = useRef("");
+  const sentenceRef = useRef("");
+  const resulttimeRef = useRef(60);
+
+  const makeExpiry = (secs: number) => {
+    const t = new Date();
+    t.setSeconds(t.getSeconds() + secs);
+    return t;
+  };
+
+  const { seconds, minutes, restart } = useTimer({
+    expiryTimestamp: makeExpiry(60),
+    autoStart: false,
+    onExpire: () => {
+      // use refs so we get the latest values
+      const inputarray = textRef.current.trim().split(/\s+/);
+      const originalarray = sentenceRef.current.split(" ");
+      let correct = 0;
+      inputarray.forEach((word, i) => {
+        if (word === originalarray[i]) correct++;
+      });
+      const total = inputarray.filter(Boolean).length;
+      setResult({ correct, total });
+      setTimerEnded(true);
+      setShowResult(true);
+    },
   });
 
-
-  if (session.status == "unauthenticated") {
-    router.push("/api/auth/signin");
-  }
-  time.setSeconds(time.getSeconds());
-  
-  const redirectfunc = () => {
-    const inputarray = text.split(" ");
-    const orignalarray = sentence.split(" ");
-
-    [...inputarray].map((char, indx) => {
-      if (char === orignalarray[indx]) {
-        Correct = Correct + 1;
-      }
-    });
-    console.log(inputarray);
-    totalWords = inputarray.length;
-
-    return router.push("/result");
-  };
-
-  const redirectfunction = ()=>{
-    const randomNumberString = (length:any) => Array.from({length}, () => Math.floor(Math.random() * 10)).join('');
-    const room= randomNumberString(10)
-    router.push(`/room/${room}`);
-  }
-
-    //@ts-ignore
-    let id = session.data?.user?.id ;
-
   useEffect(() => {
- 
-    console.log(id);
-    localStorage.setItem("userId", id);
-    if (timerEnded && !dataStored) {
-      const headers = {
-        "Content-Type": "application/json",
-      };
-
-      const data = {
-        Accuracy: (Correct / totalWords).toFixed(2),
-        WordsCount: totalWords,
-        CorrectWords: Correct,
-        Totaltime: resulttime,
-      };
-
-      const storedata = async () => {
-        try {
-
-          const response = await axios.put(
-            `/api/user/${id.toString()}/scores`,
-            data,
-            { headers }
-          );
-          localStorage.setItem("userId", id);
-          console.log(response.data);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-        }
-      };
-      storedata();
+    if (status === "unauthenticated") {
+      router.push("/api/auth/signin");
     }
-  }, [isRunning, dataStored,session.status]);
+  }, [status, router]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("/api/word");
-        setSentence(response.data.randomParagraph);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
+    if (status === "authenticated" && (session?.user as any)?.id) {
+      localStorage.setItem("userId", String((session.user as any).id));
+    }
+  }, [status, session]);
 
-    fetchData();
+  useEffect(() => {
+    axios.get("/api/word").then((res) => {
+      setSentence(res.data.randomParagraph);
+      sentenceRef.current = res.data.randomParagraph;
+    });
   }, []);
 
+  // save score after timer ends
   useEffect(() => {
-    setSentence(lorem);
-  }, [lorem]);
+    if (!timerEnded || dataStored) return;
+    const id = localStorage.getItem("userId");
+    if (!id) return;
+    const { correct, total } = result;
+    const secs = resulttimeRef.current;
+    const data = {
+      Accuracy: total > 0 ? (correct / total).toFixed(2) : "0",
+      WordsCount: total,
+      CorrectWords: correct,
+      Totaltime: secs,
+    };
+    axios
+      .put(`/api/user/${id}/scores`, data, {
+        headers: { "Content-Type": "application/json" },
+      })
+      .then(() => setDataStored(true))
+      .catch((e) => console.error("Error storing score:", e));
+  }, [timerEnded, dataStored, result]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log(e);
-    if (!isRunning) resume();
-    setText(e.target.value);
+    if (timerEnded) return;
+    const val = e.target.value;
+    setText(val);
+    textRef.current = val;
+    // start timer on very first keystroke
+    if (!timerStarted) {
+      restart(makeExpiry(resulttimeRef.current), true);
+      setTimerStarted(true);
+    }
   };
 
-  const timer = (e: any) => {
-    const time = new Date();
-    time.setSeconds(time.getSeconds() + e);
-    restart(time);
-    pause();
-    setResulttime(e);
+  const setTimer = (secs: number) => {
+    resulttimeRef.current = secs;
+    setResulttime(secs);
+    restart(makeExpiry(secs), false);
+    setTimerStarted(false);
+    setTimerEnded(false);
+    setShowResult(false);
     setDataStored(false);
+    setText("");
+    textRef.current = "";
+    setResult({ correct: 0, total: 0 });
   };
+
+  const redirectfunction = () => {
+    const room = Array.from({ length: 10 }, () =>
+      Math.floor(Math.random() * 10)
+    ).join("");
+    router.push(`/room/${room}`);
+  };
+
   const renderText = () => {
-    //@ts-ignore
     return [...sentence].map((char, index) => {
-      let color;
-      if (text[index]) {
+      let color: string | undefined;
+      if (text[index] !== undefined) {
         color = text[index] === char ? "white" : "red";
       }
       return (
@@ -150,62 +136,93 @@ export default function Home() {
     });
   };
 
+  if (status === "loading") {
+    return (
+      <div className="w-full h-screen flex justify-center items-center text-[#e2b714] text-xl">
+        Loading...
+      </div>
+    );
+  }
+
   return (
     <>
-      <div className="w-full h-96 flex justify-center items-center relative">
-        <div className="absolute h-48 w-[900px] p-4 text-3xl text-[#5d5f62] font-bold">
-          {renderText()}
+      <div className="w-full flex justify-center items-center relative mt-8">
+        <div className="relative w-[900px] h-56">
+          <div
+            ref={overlayRef}
+            className="absolute inset-0 p-4 text-2xl text-[#5d5f62] font-bold leading-relaxed overflow-hidden pointer-events-none whitespace-pre-wrap break-words"
+            style={{ fontFamily: "inherit" }}
+          >
+            {renderText()}
+          </div>
+          <textarea
+            ref={textareaRef}
+            className="absolute inset-0 w-full h-full p-4 z-10 text-2xl bg-transparent text-transparent border-none outline-none font-bold resize-none leading-relaxed overflow-y-scroll"
+            value={text}
+            onChange={handleChange}
+            onScroll={() => {
+              if (overlayRef.current && textareaRef.current) {
+                overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+              }
+            }}
+            style={{ caretColor: "#e2b714", fontFamily: "inherit" }}
+            autoFocus
+            disabled={timerEnded}
+          />
         </div>
-        <textarea
-          className="h-48 w-[900px] flex justify-center items-center p-4 z-10 text-3xl bg-transparent text-transparent border-none outline-none font-bold"
-          value={text}
-          onChange={handleChange}
-          style={{ caretColor: "#e2b714" }}
-          autoFocus
-          disabled={!isRunning && seconds === 0}
-        />
       </div>
-      <div className="w-full flex flex-col justify-start items-center space-y-10">
-        <div className="text-[#e2b714] text-5xl">
-          <span>{minutes}</span>:<span>{seconds}</span>
-        </div>
-        <div>
-          <button
-            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
-            onClick={() => timer(15)}
-          >
-            15 sec
-          </button>
-          <button
-            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
-            onClick={() => timer(30)}
-          >
-            30 sec
-          </button>
-          <button
-            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
-            onClick={() => timer(60)}
-          >
-            60 sec
-          </button>
-          <button
-            className="px-4 py-2 bg-[#e2b714] mx-2 rounded-md"
-            onClick={() => timer(120)}
-          >
-            120 sec
-          </button>
-         
-          {!isRunning && seconds === 0 && (
-            <>
-              {redirectfunc()}
-              <Result Correct={Correct} totalWords={totalWords} />
-            </>
-          )}
 
+      <div className="w-full flex flex-col justify-start items-center space-y-8 mt-4">
+        <div className="text-[#e2b714] text-5xl font-mono">
+          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
         </div>
-        <button onClick={redirectfunction} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
-   JOIN ROOM
-</button>
+
+        {!timerStarted && !timerEnded && (
+          <p className="text-[#646669] text-sm">Start typing to begin the timer</p>
+        )}
+
+        <div className="flex gap-2">
+          {[15, 30, 60, 120].map((s) => (
+            <button
+              key={s}
+              className={`px-4 py-2 rounded-md font-bold ${
+                resulttime === s && !timerEnded
+                  ? "bg-[#e2b714] text-black"
+                  : "bg-[#2c2e31] text-white hover:bg-[#e2b714] hover:text-black"
+              }`}
+              onClick={() => setTimer(s)}
+            >
+              {s}s
+            </button>
+          ))}
+        </div>
+
+        {showResult && (
+          <div className="mt-4">
+            <Result Correct={result.correct} totalWords={result.total} />
+            <div className="text-center mt-4">
+              <button
+                onClick={() => setTimer(resulttime)}
+                className="px-6 py-2 bg-[#e2b714] text-black font-bold rounded-md mr-4"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={() => router.push("/result/history")}
+                className="px-6 py-2 bg-[#2c2e31] text-white font-bold rounded-md hover:bg-white hover:text-[#e2b714]"
+              >
+                View History
+              </button>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={redirectfunction}
+          className="bg-[#2c2e31] hover:bg-white text-white hover:text-[#e2b714] font-bold py-2 px-6 rounded-md transition-colors"
+        >
+          JOIN MULTIPLAYER ROOM
+        </button>
       </div>
     </>
   );

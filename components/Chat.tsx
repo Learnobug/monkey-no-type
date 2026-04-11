@@ -1,23 +1,31 @@
 import { getSocket } from "@/socket";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-export default function Chat({roomId}: {roomId: string}) {
+export default function Chat({ roomId }: { roomId: string }) {
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState<string[]>([]);
-  const socket = getSocket();
-  const sendMessage = () => {
-    if (message.trim()) {
-      // Send message via socket
-      socket.emit("Send Message", roomId,message);
-      setChat([...chat, message]);
-      setMessage("");
-    }
-  };
 
-  socket.on("chatMessage", (message: string) => {
-    console.log(message);
-    setChat([...chat, message]);
-  });
+  useEffect(() => {
+    const socket = getSocket();
+
+    const handleMessage = (msg: string) => {
+      setChat((prev) => [...prev, msg]);
+    };
+
+    socket.on("chatMessage", handleMessage);
+
+    return () => {
+      socket.off("chatMessage", handleMessage);
+    };
+  }, []);
+
+  const sendMessage = () => {
+    if (!message.trim()) return;
+    const socket = getSocket();
+    socket.emit("Send Message", roomId, message);
+    setChat((prev) => [...prev, message]);
+    setMessage("");
+  };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
@@ -28,20 +36,19 @@ export default function Chat({roomId}: {roomId: string}) {
   return (
     <div className="w-3/4 flex flex-col justify-between p-4 px-40">
       <div>
-        <div>
-          {chat.map((user: any, index) => (
-            <div className="text-white" key={index}>
-                {user}
-            </div>
-          ))}
-        </div>
+        {chat.map((msg, index) => (
+          <div className="text-white" key={index}>
+            {msg}
+          </div>
+        ))}
       </div>
       <input
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={(e) => handleKeyDown(e)}
+        onKeyDown={handleKeyDown}
         className="text-black"
         type="text"
+        placeholder="Type a message..."
       />
     </div>
   );

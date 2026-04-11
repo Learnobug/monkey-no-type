@@ -8,27 +8,29 @@ import Chat from "@/components/Chat";
 import axios from "axios";
 
 export default function Page({ params }: { params: { roomId: string } }) {
-  const session = useSession();
-  localStorage.setItem("roomId",params.roomId);
-  const [connectedUsers, setConnectedUsers] = useState([]);
-  const [sentence, setSentence] = useState("");
-  const router=useRouter();
-  if (session.status == "unauthenticated") {
-    router.push("/api/auth/signin");
-  }
-  useEffect(() => {
+  const { data: session, status } = useSession();
+  const [connectedUsers, setConnectedUsers] = useState<any[]>([]);
+  const router = useRouter();
 
-    if (session.status !== "authenticated") return;
-   
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    localStorage.setItem("roomId", params.roomId);
+
     const socket = getSocket();
 
-    
     socket.emit(
       "joinRoom",
       {
         roomId: params.roomId,
-        name: session.data.user?.name ?? "",
-        email: session.data.user?.email ?? "",
+        name: session?.user?.name ?? "",
+        email: session?.user?.email ?? "",
       },
       (response: any) => {
         console.log(response);
@@ -36,41 +38,35 @@ export default function Page({ params }: { params: { roomId: string } }) {
     );
 
     socket.on("updateUserList", (users: any) => {
-      console.log(users);
       setConnectedUsers(users);
     });
 
-    socket.on("sentence",(data:any)=>{
-      console.log(data);
-      localStorage.setItem("sentence",data);
-      router.push(`/room/${params.roomId}/game`)
-    })
+    socket.on("sentence", (data: any) => {
+      localStorage.setItem("sentence", data);
+      router.push(`/room/${params.roomId}/game`);
+    });
 
     return () => {
-      socket.disconnect();
+      socket.off("updateUserList");
+      socket.off("sentence");
     };
-  }, [params.roomId, session.status]);
+  }, [params.roomId, status, session]);
+
+  const fetchGameData = async () => {
+    const response = await axios.get("/api/word");
+    return response.data.randomParagraph as string;
+  };
+
   const startGame = async () => {
     const gameData = await fetchGameData();
     const socket = getSocket();
     socket.emit("startGame", params.roomId, gameData);
-    localStorage.setItem("sentence",gameData);
-    router.push(`/room/${params.roomId}/game`)
-    
+    localStorage.setItem("sentence", gameData);
+    router.push(`/room/${params.roomId}/game`);
   };
 
-  const fetchGameData = async () => {
-    const response = await axios.get("/api/word");
-    setSentence(response.data.randomParagraph);
-    return response.data.randomParagraph;
-  };
-
-  const filteredUsers = connectedUsers.filter((user: any) => user.isOwner === true);
-  //@ts-ignore
-  const owner = filteredUsers[0]?.email === session.data?.user?.email;
-  
-  
-
+  const ownerEmail = connectedUsers.find((u) => u.isOwner)?.email;
+  const isOwner = ownerEmail != null && ownerEmail === session?.user?.email;
 
   return (
     <div className="w-full h-screen flex">
@@ -80,11 +76,16 @@ export default function Page({ params }: { params: { roomId: string } }) {
           <h1 className="text-2xl text-white">
             Room ID: <span className="text-[#e2b714]">{params.roomId}</span>
           </h1>
-          {owner && <button onClick={startGame} className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl">
-            Start Game
-          </button>}
+          {isOwner && (
+            <button
+              onClick={startGame}
+              className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl"
+            >
+              Start Game
+            </button>
+          )}
           <Link
-            href={"/"}
+            href="/"
             className="px-20 py-6 bg-[#2c2e31] mx-2 rounded-md text-white w-72 text-center hover:bg-white hover:text-[#e2b714] hover:font-bold text-xl"
           >
             Leave Room
