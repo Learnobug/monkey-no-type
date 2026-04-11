@@ -86,7 +86,7 @@ export default function GamePage() {
         router.push("/result/room");
       })
       .catch((e) => console.error("Error storing score:", e));
-  }, [timerEnded, dataStored, result]);
+  }, [timerEnded, dataStored, result, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (timerEnded) return;
@@ -97,7 +97,7 @@ export default function GamePage() {
 
   const renderText = () => {
     if (!sentence) return null;
-    return [...sentence].map((char, index) => {
+    return sentence.split("").map((char, index) => {
       let color: string | undefined;
       if (text[index] !== undefined) {
         color = text[index] === char ? "white" : "red";

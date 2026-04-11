@@ -50,7 +50,7 @@ export default function Page({ params }: { params: { roomId: string } }) {
       socket.off("updateUserList");
       socket.off("sentence");
     };
-  }, [params.roomId, status, session]);
+  }, [params.roomId, status, session, router]);
 
   const fetchGameData = async () => {
     const response = await axios.get("/api/word");

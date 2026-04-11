@@ -123,7 +123,7 @@ export default function Home() {
   };
 
   const renderText = () => {
-    return [...sentence].map((char, index) => {
+    return sentence.split("").map((char, index) => {
       let color: string | undefined;
       if (text[index] !== undefined) {
         color = text[index] === char ? "white" : "red";
